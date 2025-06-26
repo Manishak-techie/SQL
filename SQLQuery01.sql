@@ -3549,77 +3549,1124 @@ GENDER VARCHAR(10)
 )
 GO
 
+--PART 100 SEND DATATABLE AS PARAMETER TO STORED PROCEDURE
+
+--PART 101 GROUPING SETS IN SQL SERVER
+CREATE TABLE Employees (
+    Id INT PRIMARY KEY,
+    Name NVARCHAR(50),
+    Gender NVARCHAR(10),
+    Salary INT,
+    Country NVARCHAR(50)
+);
+
+INSERT INTO Employees (Id, Name, Gender, Salary, Country) VALUES
+(1, 'Mark',      'Male',   5000, 'USA'),
+(2, 'John',      'Male',   4500, 'India'),
+(3, 'Pam',       'Female', 5500, 'USA'),
+(4, 'Sara',      'Female', 4000, 'India'),
+(5, 'Todd',      'Male',   3500, 'India'),
+(6, 'Mary',      'Female', 5000, 'UK'),
+(7, 'Ben',       'Male',   6500, 'UK'),
+(8, 'Elizabeth', 'Female', 7000, 'USA'),
+(9, 'Tom',       'Male',   5500, 'UK'),
+(10,'Ron',       'Male',   5000, 'USA');
+
+SELECT * FROM Employees
+
+SELECT Country, Gender, SUM(Salary) AS TotalSalary
+FROM Employees
+GROUP BY Country, Gender;
+--------------------------------------------------
+SELECT Country, Gender, SUM(Salary) AS TotalSalary
+FROM Employees
+GROUP BY Country, Gender
+
+UNION ALL
+
+SELECT Country, NULL AS Gender, SUM(Salary) AS TotalSalary
+FROM Employees
+GROUP BY Country;
+--------------------------------------------------------------
+SELECT Country, Gender, SUM(Salary) AS TotalSalary
+FROM Employees
+GROUP BY Country, Gender
+
+UNION ALL
+
+SELECT Country, NULL AS Gender, SUM(Salary) AS TotalSalary
+FROM Employees
+GROUP BY Country
+
+UNION ALL
+
+SELECT NULL AS Country, Gender, SUM(Salary) AS TotalSalary
+FROM Employees
+GROUP BY Gender
+
+UNION ALL
+
+SELECT NULL AS Country, NULL AS Gender, SUM(Salary) AS TotalSalary
+FROM Employees;
+------------------------------------------------------------------
+--PART 102 ROLLUP IN SQL SERVER
+SELECT COUNTRY, SUM(SALARY) AS TOTALSALARY
+FROM Employees
+GROUP BY ROLLUP(COUNTRY)
+
+SELECT COUNTRY, SUM(SALARY) AS TOTALSALARY
+FROM Employees
+GROUP BY COUNTRY WITH ROLLUP
+-----------------------------------------------
+SELECT COUNTRY, SUM(SALARY) AS TOTALSALARY
+FROM Employees
+GROUP BY COUNTRY
+
+UNION ALL
+
+SELECT NULL, SUM(SALARY) AS TOTALSALARY
+FROM Employees
+-------------------------------------------------
+SELECT COUNTRY, SUM(SALARY) AS TOTALSALARY
+FROM Employees
+GROUP BY GROUPING SETS
+(
+(COUNTRY), ()
+)
+
+--PART 103 CUBE IN SQL SERVER
+SELECT COUNTRY, SUM(SALARY) AS TOTALSALARY
+FROM Employees
+GROUP BY CUBE(COUNTRY, GENDER)
+
+--PART 104 DIFF BETWEEN CUBE AND ROLLUP INSQL SERVER
+CREATE TABLE SalesData (
+    Continent NVARCHAR(50),
+    Country NVARCHAR(50),
+    City NVARCHAR(50),
+    SaleAmount INT
+);
+
+INSERT INTO SalesData (Continent, Country, City, SaleAmount) VALUES
+('Asia',   'India',          'Bangalore',   1000),
+('Asia',   'India',          'Chennai',     2000),
+('Asia',   'Japan',          'Tokyo',       4000),
+('Asia',   'Japan',          'Hiroshima',   5000),
+('Europe', 'United Kingdom', 'London',      1000),
+('Europe', 'United Kingdom', 'Manchester',  2000),
+('Europe', 'France',         'Paris',       4000),
+('Europe', 'France',         'Cannes',      5000);
+
+SELECT * FROM SalesData
+
+SELECT Continent, Country, City, SUM(SaleAmount) AS TotalSales
+FROM SalesData
+GROUP BY ROLLUP(Continent, Country, City); --AGGREGATION DONE BASED ON HIERACHY RELATIONSHIP
+
+SELECT Continent, Country, City, SUM(SaleAmount) AS TotalSales
+FROM SalesData
+GROUP BY CUBE(Continent, Country, City);--ALL POSSIBLE COMBINATIONS
+
+SELECT Continent, SUM(SaleAmount) AS TotalSales
+FROM SalesData
+GROUP BY CUBE(Continent)
+
+SELECT Continent, SUM(SaleAmount) AS TotalSales
+FROM SalesData
+GROUP BY ROLLUP(Continent)
+
+--PART 105 GROUPING FUNCTION SQL SERVER
+CREATE TABLE GroupingResults (
+    Continent NVARCHAR(50),
+    Country NVARCHAR(50),
+    City NVARCHAR(50),
+    TotalSales INT,
+    GP_Continent INT,
+    GP_Country INT,
+    GP_City INT
+);
+
+INSERT INTO GroupingResults VALUES
+('Asia',   'India',          'Bangalore',   1000, 0, 0, 0),
+('Asia',   'India',          'Chennai',     2000, 0, 0, 0),
+('Asia',   'India',          NULL,          3000, 0, 0, 1),
+('Asia',   'Japan',          'Hiroshima',   5000, 0, 0, 0),
+('Asia',   'Japan',          'Tokyo',       4000, 0, 0, 0),
+('Asia',   'Japan',          NULL,          9000, 0, 0, 1),
+('Asia',   NULL,             NULL,         12000, 0, 1, 1),
+('Europe', 'France',         'Paris',       4000, 0, 0, 0),
+('Europe', 'France',         NULL,          9000, 0, 0, 1),
+('Europe', 'United Kingdom', 'London',      1000, 0, 0, 0),
+('Europe', 'United Kingdom', 'Manchester',  2000, 0, 0, 0),
+('Europe', 'United Kingdom', NULL,          3000, 0, 0, 1),
+('Europe', NULL,             NULL,         12000, 0, 1, 1),
+(NULL,     NULL,             NULL,         24000, 1, 1, 1);
+
+SELECT * FROM GroupingResults
+
+SELECT 
+    Continent, 
+    Country,
+    City, 
+    SUM(SaleAmount) AS TotalSales,
+    GROUPING(Continent) AS GP_Continent,
+    GROUPING(Country) AS GP_Country,
+    GROUPING(City) AS GP_City
+FROM SalesData
+GROUP BY ROLLUP(Continent, Country, City);
+
+SELECT 
+  CASE WHEN GROUPING(Continent) = 1 THEN 'all' ELSE ISNULL(Continent, 'unknown') END AS Continent,
+  CASE WHEN GROUPING(Country) = 1 THEN 'all' ELSE ISNULL(Country, 'unknown') END AS Country,
+  CASE WHEN GROUPING(City) = 1 THEN 'all' ELSE ISNULL(City, 'unknown') END AS City,
+  SUM(SaleAmount) AS TotalSales
+FROM SalesData
+GROUP BY ROLLUP(Continent, Country, City);
+
+select 
+ISNULL(Continent, 'ALL') as continent,
+ISNULL(Country, 'ALL') as Country,
+ISNULL(City, 'ALL') as City,
+sum(SaleAmount) as totalsales
+from SalesData
+group by rollup(continent, country, city)
+
+select * from SalesData
+
+--PART 106 GROUPING ID FUNCTIONIN SQL SERVER
+SELECT 
+    Continent, 
+    Country, 
+    City, 
+    SUM(SaleAmount) AS TotalSales,
+    GROUPING(Continent) + GROUPING(Country) + GROUPING(City) AS Groupings
+FROM 
+    SalesData
+GROUP BY 
+    ROLLUP(Continent, Country, City);
+
+--PART 107 DEBUGGING SQL SERVER STORED PROCEDURES
+--ALT+F5
+--STEP INTO
+--STEP OVER
+--STEP OUT
+
+--PART 108 OVER CLAUSE IN SQL SERVER
+CREATE TABLE emp1 (
+    ID INT PRIMARY KEY,
+    Name VARCHAR(50),
+    Gender VARCHAR(10),
+    Salary DECIMAL(10, 2)
+);
+
+INSERT INTO emp1 (ID, Name, Gender, Salary) VALUES
+(1, 'Alice',   'Female', 55000),
+(2, 'Bob',     'Male',   60000),
+(3, 'Charlie', 'Male',   48000),
+(4, 'Diana',   'Female', 62000),
+(5, 'Ethan',   'Male',   51000),
+(6, 'Fiona',   'Female', 58000),
+(7, 'George',  'Male',   47000),
+(8, 'Hannah',  'Female', 53000),
+(9, 'Ian',     'Male',   49000),
+(10,'Julia',   'Female', 61000);
+
+SELECT * FROM emp1
+
+SELECT GENDER, COUNT(*) AS GENDERTOTAL, AVG(SALARY) AS AVGSAL,
+MIN(SALARY)AS MINSAL,MAX(SALARY) AS MAXSAL
+FROM EMP1
+GROUP BY GENDER
+
+SELECT 
+    E.Name, 
+    E.Salary, 
+    E.Gender, 
+    GENDERS.GenderTotal, 
+    GENDERS.AvgSal, 
+    GENDERS.MinSal, 
+    GENDERS.MaxSal
+FROM Emp1 E
+INNER JOIN (
+    SELECT 
+        Gender, 
+        COUNT(*) AS GenderTotal, 
+        AVG(Salary) AS AvgSal,
+        MIN(Salary) AS MinSal,
+        MAX(Salary) AS MaxSal
+    FROM Emp1
+    GROUP BY Gender
+) AS GENDERS
+ON E.Gender = GENDERS.Gender;
+
+SELECT 
+    Name, 
+    Salary, 
+    Gender,
+    COUNT(Gender) OVER (PARTITION BY Gender) AS GendersTotal,
+    AVG(Salary) OVER (PARTITION BY Gender) AS AvgSal,
+    MIN(Salary) OVER (PARTITION BY Gender) AS MinSal,
+    MAX(Salary) OVER (PARTITION BY Gender) AS MaxSal
+FROM emp1;
+
+--PART 109 ROW NUMBER FUNCTION SQL SERVER
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    ROW_NUMBER() OVER (ORDER BY Gender) AS RowNumber
+FROM Employees;
+
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    ROW_NUMBER() OVER (PARTITION BY Gender ORDER BY GENDER) AS RowNumber
+FROM Employees;
+
+--PART 110 RANK AND DENSE RANK IN SQL SERVER
+SELECT * FROM Employees
+
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    RANK() OVER (ORDER BY Salary DESC) AS [Rank],
+    DENSE_RANK() OVER (ORDER BY Salary DESC) AS DenseRank
+FROM Employees;
+
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    RANK() OVER (PARTITION BY GENDER ORDER BY Salary DESC) AS [Rank],
+    DENSE_RANK() OVER (PARTITION BY GENDER ORDER BY Salary DESC) AS DenseRank
+FROM Employees;
+
+--PART 111 DIFFERENCE BTW RANK DENSE RANK AND ROW NUMBER
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    ROW_NUMBER() OVER (ORDER BY Salary DESC) AS RowNumber,
+    RANK() OVER (ORDER BY Salary DESC) AS [Rank],
+    DENSE_RANK() OVER (ORDER BY Salary DESC) AS DenseRank
+FROM Employees;
 
 
---PART 100 
---PART 101
---PART 102
---PART 103
---PART 104
---PART 105
---PART 106
---PART 107
---PART 108
---PART 109
+--PART 112 CALCULATE RUNNING TOTAL IN SQL SERVER
+select name, gender, salary,
+sum(salary) over (order by id) as runningtotal
+from employees
+
+select name, gender, salary,
+sum(salary) over (partition by gender order by id) as runningtotal
+from employees
+
+--PART 113 NTILE FUNCTION IN SQL SERVER
+select NAME, GENDER, SALARY,
+NTILE(2) OVER(ORDER BY SALARY) AS [NTILE]
+from employees
+
+select NAME, GENDER, SALARY,
+NTILE(2) OVER(partition by gender ORDER BY SALARY) AS [NTILE]
+from employees
+
+--PART 114 LEAD AND LAG FUNCTIONS IN SQL SERVER
+select NAME, GENDER, SALARY,
+LEAD(SALARY) OVER( ORDER BY SALARY) AS LEAD
+from employees
+
+select NAME, GENDER, SALARY,
+LEAD(SALARY, 2, -1) OVER( ORDER BY SALARY) AS LEAD
+from employees
+
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    LEAD(Salary, 2, -1) OVER (ORDER BY Salary) AS LeadSalary,
+    LAG(Salary, 1, -1) OVER (ORDER BY Salary) AS LagSalary
+FROM Employees;
+
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    LEAD(Salary, 2, -1) OVER (partition by gender ORDER BY Salary) AS LeadSalary,
+    LAG(Salary, 1, -1) OVER (partition by gender ORDER BY Salary) AS LagSalary
+FROM Employees;
+
+select NAME, GENDER, SALARY,
+LEAD(SALARY) OVER(partition by gender ORDER BY SALARY) AS LEAD
+from employees
+
+--PART 115 FIRST_VALUE FUNCTION SQL SERVER
+select NAME, GENDER, SALARY,
+FIRST_VALUE(NAME) OVER(ORDER BY SALARY) AS FIRST_VALUE
+from employees
+
+select NAME, GENDER, SALARY,
+FIRST_VALUE(NAME) OVER(partition by gendeR ORDER BY SALARY) AS FIRST_VALUE
+from employees
+
+--PART 116 WINDOW FUNCTIONS IN SQL SERVER
+--AGGREGATE FUNC()--AVG, SUM,COUNT,MIN,MAX ETC.,
+--RANKING FUNC()--RANK,DENSE_RANK,ROW_NUMBER ETC.,
+--ANALYTIC FUNC()-LEAD,LAG,FIRST_VALUE,LAST_VALUE ETC.,
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    AVG(Salary) OVER (partition by gendeR ORDER BY Salary ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS Average,
+    COUNT(Salary) OVER (partition by gendeR order BY Salary ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS [Count],
+    SUM(Salary) OVER (partition by gendeR ORDER BY Salary ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS [Sum]
+FROM Employees;
+
+SELECT 
+    Name, 
+    Gender, 
+    Salary,
+    AVG(Salary) OVER (ORDER BY Salary ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS Average,
+    COUNT(Salary) OVER (order BY Salary ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS [Count],
+    SUM(Salary) OVER (ORDER BY Salary ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS [Sum]
+FROM Employees;
+
+SELECT AVG(SALARY)
+FROM EMPLOYEES
+
+--PART 117 DIFFERENCE BTW ROWS AND RANGE
+--RANGE TREATS AS SINGLE ENTITY
+--ROWS TREATS AS DISTINCT VALUES
+
+SELECT NAME, SALARY,
+SUM(SALARY) OVER( ORDER BY SALARY) AS RUNNINGTOTAL
+FROM EMPLOYEES
+
+SELECT NAME, SALARY,
+SUM(SALARY) OVER( ORDER BY SALARY RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS RUNNINGTOTAL
+FROM EMPLOYEES
+
+SELECT NAME, SALARY,
+SUM(SALARY) OVER( ORDER BY SALARY ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS RUNNINGTOTAL
+FROM EMPLOYEES
+
+SELECT NAME, SALARY,
+SUM(SALARY) OVER(ORDER BY SALARY) AS [DEFAULT],
+SUM(SALARY) OVER( ORDER BY SALARY RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS [RANGE],
+SUM(SALARY) OVER( ORDER BY SALARY ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS [ROWS]
+
+FROM EMPLOYEES
+
+--PART 118 LAST VALUE FUNCTION IN SQL SERVER
+select NAME, GENDER, SALARY,
+LAST_VALUE(NAME) OVER(partition by gendeR ORDER BY SALARY) AS LAST_VALUE
+from employees
+
+--PART 119 UNPIVOT IN SQL SERVER
+--PIVOT TURNS ROWS INTO COLUMNS
+--UNPIVOT TURNS COLUMNS INTO ROWS
+CREATE TABLE SalesAgent (
+    Name VARCHAR(50),
+    India INT,
+    US INT,
+    UK INT
+);
+INSERT INTO SalesAgent (Name, India, US, UK)
+VALUES 
+('David', 960, 520, 360),
+('John', 970, 540, 800);
+
+select * from SalesAgent
+--------------------------------------
+CREATE TABLE tblProductSales (
+    SalesAgent VARCHAR(50),
+    India INT,
+    US INT,
+    UK INT
+);
+INSERT INTO tblProductSales (SalesAgent, India, US, UK)
+VALUES 
+('David', 960, 520, 360),
+('John', 970, 540, 800);
+
+select * from tblProductSales
+-------------------------------------
+SELECT 
+    SalesAgent, 
+    Country, 
+    SalesAmount
+FROM tblProductSales
+UNPIVOT (
+    SalesAmount
+    FOR Country IN (India, US, UK)
+) AS UnpivotExample;
+----------------------------------------
+SELECT 
+    SalesAgent, 
+    Country, 
+    SalesAmount
+FROM tblProductSales
+UNPIVOT (
+    SalesAmount
+    FOR Country IN (India, US, UK)
+) AS UnpivotExample;
+
+--PART 120 REVERSE PIVOT TABLE IN SQL SERVER
+SELECT 
+    SalesAgent, 
+    Country, 
+    SalesAmount
+FROM tblProductSales
+UNPIVOT (
+    SalesAmount 
+    FOR Country IN (India, US, UK)
+) AS Unpivoted;
+----------------------------------------------
+SELECT 
+    SalesAgent, 
+    [India], 
+    [US]
+FROM tblProductSales
+PIVOT (
+    SUM(SalesAmount)
+    FOR Country IN ([India], [US])
+) AS PivotExample;
+
+-------------------------------------------------
+select * from tblProductSales
+
+SELECT 
+    SalesAgent, 
+    Country, 
+    SalesAmount
+FROM tblProductSales
+UNPIVOT (
+    SalesAmount
+    FOR Country IN (India, US, UK)
+) AS Unpivoted;
+
+
+-----------------------------------------------------------------------
+
+--PART 121 CHOOSE FUNCTION SQL SERVER
+SELECT CHOOSE(2,'INDIA','US','UK') AS COUNTRY
+
+SELECT CHOOSE(0,'INDIA','US','UK') AS COUNTRY
+
+CREATE TABLE EmployeeBirthdays (
+    ID INT PRIMARY KEY,
+    Name VARCHAR(50),
+    DateOfBirth DATE
+);
+INSERT INTO EmployeeBirthdays (ID, Name, DateOfBirth)
+VALUES
+(1, 'Alice', '1980-01-11'),
+(2, 'Bob', '1981-03-15'),
+(3, 'Charlie', '1982-07-20'),
+(4, 'Diana', '1983-09-05'),
+(5, 'Ethan', '1984-11-30'),
+(6, 'Fiona', '1985-12-25');
+
+SELECT * FROM EmployeeBirthdays
+
+SELECT 
+    Name, 
+    DateOfBirth,
+    CASE DATEPART(MM, DateOfBirth)
+        WHEN 1 THEN 'JAN'
+        WHEN 2 THEN 'FEB'
+        WHEN 3 THEN 'MAR'
+        WHEN 4 THEN 'APR'
+        WHEN 5 THEN 'MAY'
+        WHEN 6 THEN 'JUN'
+        WHEN 7 THEN 'JUL'
+        WHEN 8 THEN 'AUG'
+        WHEN 9 THEN 'SEP'
+        WHEN 10 THEN 'OCT'
+        WHEN 11 THEN 'NOV'
+        WHEN 12 THEN 'DEC'
+    END AS [MONTH]
+FROM EmployeeBirthdays;
+
+SELECT 
+    Name,
+    DateOfBirth,
+    CHOOSE(DATEPART(MM, DateOfBirth),
+           'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 
+           'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC') AS [MONTH]
+FROM EmployeeBirthdays;
+
+--PART 122 IIF FUNCTION SQL SERVE
+DECLARE @GENDERID INT
+SET @GENDERID=1
+SELECT IIF(@GENDERID=1,'MALE','FEMALE') AS GENDER
+
+SELECT * FROM Employees
+--USING CASE STATEMENT
+SELECT 
+    NAME,
+    CASE 
+        WHEN UPPER(GENDER) = 'MALE' THEN 'MALE'
+        ELSE 'FEMALE'
+    END AS GENDER
+FROM EMPLOYEES;
+
+--USING IIF STATEMENT
+SELECT 
+    NAME,
+    IIF(UPPER(GENDER) = 'MALE', 'MALE', 'FEMALE') AS GENDER
+FROM EMPLOYEES;
+
+SELECT DISTINCT GENDER, SQL_VARIANT_PROPERTY(GENDER, 'BaseType') AS DataType
+FROM EMPLOYEES;
+
+--PART 123 TRY PARSE FUNCTION
+SELECT TRY_PARSE('99' AS INT) AS RESULT--RESULTS 99
+SELECT TRY_PARSE('ABC' AS INT) AS RESULT--RESULTS NULL
+
+select
+case when try_parse('abc' as int) is null then 'conversion failed'
+else'conversion successful'
+end as result
+
+SELECT 
+    IIF(TRY_PARSE('abc' AS INT) IS NULL, 'conversion failed', 'conversion successful') AS result;
+
+SELECT PARSE('abc' AS INT) AS RESULT--RESULTS error
+SELECT TRY_PARSE('ABC' AS INT) AS RESULT--RESULTS NULL
+
+--PART 124 try convert function
+
+SELECT try_convert(int,'99') AS RESULT--RESULTS 99
+SELECT try_convert(int,'abc') AS RESULT--RESULTS null
+
+select
+case when try_convert(int,'abc') is null then 'conversion failed'
+else'conversion successful'
+end as result
+
+SELECT 
+    IIF(TRY_CONVERT(INT, 'abc') IS NULL, 'conversion failed', 'conversion successful') AS result;
+
+SELECT try_convert(xml,'<root><child/></root>') AS [xml]
+SELECT TRY_PARSE(xml,'<root><child/></root>') AS [xml]
+
+--PART 125 EOMONTH FUNCTION
+SELECT EOMONTH('11/20/2015') AS LASTDAY
+
+SELECT EOMONTH('2016-02-20', 2) AS LASTDAY;
+
+SELECT EOMONTH('2016-02-20', -1) AS LASTDAY;
+
+--PART 126 DATEFROMPARTS FUNCTION
+SELECT DATEFROMPARTS(2025,05,02) AS [DATE]
+
+--PART 127 DIFF BTW DATETIME AND SMALLDATETIME
+--SMALLDATETIME
+INSERT INTO Employees([SMALLDATETIME]) VALUES ('01/01/1899')
+--DATETIME
+INSERT INTO Employees([DATETIME]) VALUES ('01/01/1752')
+
+-- DATE TIME AND SMALL DATE TIEM HAS TO BE WITHIN THE DATE RANGE OTHERWISE WILL GET AN ERROR
+
+--PART 128 DATETIME2FROMPARTS
+SELECT DATETIME2FROMPARTS(2015,11,15,20,55,55,0,0) AS [DATETIME2]
+SELECT DATETIME2FROMPARTS(2015,11,15,20,55,55,5,3) AS [DATETIME2]
+
+--PART 129 DATETIME AND DATETIME2
+
+CREATE TABLE DateTimeExample (
+    ID INT,
+    DT_Datetime DATETIME,
+    DT_Datetime2 DATETIME2(7)
+);
+INSERT INTO DateTimeExample (ID, DT_Datetime, DT_Datetime2)
+VALUES 
+(1, '2024-06-26 12:34:56.123', '2024-06-26 12:34:56.1234567'),
+(2, '2024-06-26 23:59:59.997', '2024-06-26 23:59:59.9999999');
+SELECT 
+    ID, 
+    DT_Datetime, 
+    DT_Datetime2
+FROM 
+    DateTimeExample;
+
+
+DECLARE @dt1 DATETIME = '2024-06-26 12:34:56.123';
+DECLARE @dt2 DATETIME2(7) = '2024-06-26 12:34:56.1234567';
+
+SELECT 
+    @dt1 AS [DATETIME],
+    @dt2 AS [DATETIME2(7)];
+
+--PART 130 OFFSET FETCH NEXT IN SQLSERVER
+CREATE TABLE Products (
+    ID INT PRIMARY KEY,
+    Name VARCHAR(100),
+    Description VARCHAR(255),
+    Price DECIMAL(10, 2)
+);
+INSERT INTO Products (ID, Name, Description, Price) VALUES
+(1, 'Product-1', 'Product Description-1', 10),
+(2, 'Product-2', 'Product Description-2', 20),
+(3, 'Product-3', 'Product Description-3', 30),
+(4, 'Product-4', 'Product Description-4', 40),
+(5, 'Product-5', 'Product Description-5', 50),
+(6, 'Product-6', 'Product Description-6', 60),
+(7, 'Product-7', 'Product Description-7', 10),
+(8, 'Product-8', 'Product Description-8', 20),
+(9, 'Product-9', 'Product Description-9', 30),
+(10, 'Product-10', 'Product Description-10', 40),
+(11, 'Product-11', 'Product Description-11', 50),
+(12, 'Product-12', 'Product Description-12', 60),
+(13, 'Product-13', 'Product Description-13', 10),
+(14, 'Product-14', 'Product Description-14', 20),
+(15, 'Product-15', 'Product Description-15', 30),
+(16, 'Product-16', 'Product Description-16', 40),
+(17, 'Product-17', 'Product Description-17', 50),
+(18, 'Product-18', 'Product Description-18', 60),
+(19, 'Product-19', 'Product Description-19', 10),
+(20, 'Product-20', 'Product Description-20', 20),
+(21, 'Product-21', 'Product Description-21', 30),
+(22, 'Product-22', 'Product Description-22', 40),
+(23, 'Product-23', 'Product Description-23', 50),
+(24, 'Product-24', 'Product Description-24', 60),
+(25, 'Product-25', 'Product Description-25', 10),
+(26, 'Product-26', 'Product Description-26', 20),
+(27, 'Product-27', 'Product Description-27', 30),
+(28, 'Product-28', 'Product Description-28', 40),
+(29, 'Product-29', 'Product Description-29', 50),
+(30, 'Product-30', 'Product Description-30', 60),
+(31, 'Product-31', 'Product Description-31', 10),
+(32, 'Product-32', 'Product Description-32', 20),
+(33, 'Product-33', 'Product Description-33', 30),
+(34, 'Product-34', 'Product Description-34', 40),
+(35, 'Product-35', 'Product Description-35', 50),
+(36, 'Product-36', 'Product Description-36', 60),
+(37, 'Product-37', 'Product Description-37', 10),
+(38, 'Product-38', 'Product Description-38', 20),
+(39, 'Product-39', 'Product Description-39', 30),
+(40, 'Product-40', 'Product Description-40', 40),
+(41, 'Product-41', 'Product Description-41', 50),
+(42, 'Product-42', 'Product Description-42', 60),
+(43, 'Product-43', 'Product Description-43', 10),
+(44, 'Product-44', 'Product Description-44', 20),
+(45, 'Product-45', 'Product Description-45', 30),
+(46, 'Product-46', 'Product Description-46', 40),
+(47, 'Product-47', 'Product Description-47', 50),
+(48, 'Product-48', 'Product Description-48', 60),
+(49, 'Product-49', 'Product Description-49', 10),
+(50, 'Product-50', 'Product Description-50', 20),
+(51, 'Product-51', 'Product Description-51', 30),
+(52, 'Product-52', 'Product Description-52', 40),
+(53, 'Product-53', 'Product Description-53', 50),
+(54, 'Product-54', 'Product Description-54', 60),
+(55, 'Product-55', 'Product Description-55', 10),
+(56, 'Product-56', 'Product Description-56', 20),
+(57, 'Product-57', 'Product Description-57', 30),
+(58, 'Product-58', 'Product Description-58', 40),
+(59, 'Product-59', 'Product Description-59', 50),
+(60, 'Product-60', 'Product Description-60', 60),
+(61, 'Product-61', 'Product Description-61', 10),
+(62, 'Product-62', 'Product Description-62', 20),
+(63, 'Product-63', 'Product Description-63', 30),
+(64, 'Product-64', 'Product Description-64', 40),
+(65, 'Product-65', 'Product Description-65', 50),
+(66, 'Product-66', 'Product Description-66', 60),
+(67, 'Product-67', 'Product Description-67', 10),
+(68, 'Product-68', 'Product Description-68', 20),
+(69, 'Product-69', 'Product Description-69', 30),
+(70, 'Product-70', 'Product Description-70', 40),
+(71, 'Product-71', 'Product Description-71', 50),
+(72, 'Product-72', 'Product Description-72', 60),
+(73, 'Product-73', 'Product Description-73', 10),
+(74, 'Product-74', 'Product Description-74', 20),
+(75, 'Product-75', 'Product Description-75', 30),
+(76, 'Product-76', 'Product Description-76', 40),
+(77, 'Product-77', 'Product Description-77', 50),
+(78, 'Product-78', 'Product Description-78', 60),
+(79, 'Product-79', 'Product Description-79', 10),
+(80, 'Product-80', 'Product Description-80', 20),
+(81, 'Product-81', 'Product Description-81', 30),
+(82, 'Product-82', 'Product Description-82', 40),
+(83, 'Product-83', 'Product Description-83', 50),
+(84, 'Product-84', 'Product Description-84', 60),
+(85, 'Product-85', 'Product Description-85', 10),
+(86, 'Product-86', 'Product Description-86', 20),
+(87, 'Product-87', 'Product Description-87', 30),
+(88, 'Product-88', 'Product Description-88', 40),
+(89, 'Product-89', 'Product Description-89', 50),
+(90, 'Product-90', 'Product Description-90', 60),
+(91, 'Product-91', 'Product Description-91', 10),
+(92, 'Product-92', 'Product Description-92', 20),
+(93, 'Product-93', 'Product Description-93', 30),
+(94, 'Product-94', 'Product Description-94', 40),
+(95, 'Product-95', 'Product Description-95', 50),
+(96, 'Product-96', 'Product Description-96', 60),
+(97, 'Product-97', 'Product Description-97', 10),
+(98, 'Product-98', 'Product Description-98', 20),
+(99, 'Product-99', 'Product Description-99', 30),
+(100, 'Product-100', 'Product Description-100', 40);
+
+SELECT * FROM Products
+
+SELECT * FROM Products
+ORDER BY ID
+OFFSET 10 ROWS
+FETCH NEXT 10 ROWS ONLY;
+
+DECLARE @Counter INT = (SELECT ISNULL(MAX(ID), 0) + 1 FROM Products);
+--append rows without deleting existing ones:
+
+DECLARE @Counter INT = (SELECT ISNULL(MAX(ID), 0) + 1 FROM Products);
+DECLARE @Max INT = @Counter + 99; -- Insert 100 rows
+
+DECLARE @Name VARCHAR(25);
+DECLARE @Description VARCHAR(100);
+DECLARE @Price INT;
+
+WHILE @Counter <= @Max
+BEGIN
+    SET @Name = 'Product-' + CAST(@Counter AS VARCHAR(10));
+    SET @Description = 'Product Description-' + CAST(@Counter AS VARCHAR(10));
+    SET @Price = (@Counter % 6 + 1) * 10;
+
+    INSERT INTO Products (ID, Name, Description, Price)
+    VALUES (@Counter, @Name, @Description, @Price);
+
+    SET @Counter = @Counter + 1;
+END
+
+SELECT TOP 10 * FROM Products ORDER BY ID;
+SELECT * FROM Products WHERE ID BETWEEN 1 AND 20 ORDER BY ID;
+
+EXEC spGetRowsByPageNumberAndPageSize @PageNumber = 5, @PageSize = 10;
+
+CREATE PROCEDURE spGetRowsByPageNumberAndPageSize
+    @PageNumber INT,
+    @PageSize INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT * FROM Products
+    ORDER BY Id
+    OFFSET (@PageNumber - 1) * @PageSize ROWS
+    FETCH NEXT @PageSize ROWS ONLY;
+END;
+
+--PART 131 IDENTIFYING OBJECT DEPENDECIES
+
+--PART 132 SYS DM SQL REFERENCING ENTITIES
+SELECT * FROM SYS.dm_sql_referencing_entities('[dbo].[Employees]','OBJECT')
+
+
+
+CREATE VIEW VWEMPLOYEE --REFERENCING ENTITY
+AS
+SELECT * FROM EMPLOYEES--REFERENCED ENTITY
+
+--PART 133 SP DEPENDS IN SQL SERVER
+CREATE TABLE EMPLOYEES1
+(
+ID INT PRIMARY KEY IDENTITY,
+NAME VARCHAR(50),
+GENDER VARCHAR(10)
+)
+GO
+
+CREATE PROCEDURE SP_GETEMPLOYEES
+AS
+BEGIN
+SELECT * FROM EMPLOYEES
+END 
+GO
+
+SP_DEPENDS 'EMPLOYEES1'
+SP_DEPENDS '[dbo].[SP_GETEMPLOYEES]'
+
+--PART 134 SEQUENCE OBJECT IN SQL SERVER
+CREATE SEQUENCE [DBO].[SEQUENCEONJECT]
+AS INT
+START WITH 1
+INCREMENT BY 1
+
+SELECT NEXT VALUE FOR [DBO].[SEQUENCEONJECT]
+
+SELECT * FROM SYS.sequences WHERE NAME='SEQUENCEONJECT'
+
+DROP SEQUENCE[SEQUENCEONJECT]
+
+CREATE SEQUENCE[DBO].[SEQUENCEOBJECT]
+START WITH 100
+INCREMENT BY 10
+MINVALUE 100
+MAXVALUE 150
+
+SELECT NEXT VALUE FOR [DBO].[SEQUENCEOBJECT]
+
+/****** Object:  Sequence [dbo].[TEST_SEQ]    Script Date: 26/06/2025 18:35:17 ******/
+CREATE SEQUENCE [dbo].[TEST_SEQ] 
+ AS [bigint]
+ START WITH 1
+ INCREMENT BY 1
+ MINVALUE 1
+ MAXVALUE 1000
+ CACHE  20 
+GO
+
+--PART 135 DIFFERENCE BETWEEN SEQUENCE AND IDENTITY
+
+--PART 136 GUID IN SQL SERVER
+declare @id uniqueidentifier
+select NEWID()
+select @id
+
+-- Create first database and table
+CREATE DATABASE usadb;
+GO
+
+USE usadb;
+GO
+
+CREATE TABLE usacustomer
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    name VARCHAR(50)
+);
+GO
+
+INSERT INTO usacustomer (name) VALUES ('tom');
+INSERT INTO usacustomer (name) VALUES ('mike');
+GO
+
+-- Create second database and table
+CREATE DATABASE indiadb;
+GO
+
+USE indiadb;
+GO
+
+CREATE TABLE indiacustomer
+(
+    id INT PRIMARY KEY IDENTITY(1,1),
+    name VARCHAR(50)
+);
+GO
+
+INSERT INTO indiacustomer (name) VALUES ('tom');
+INSERT INTO indiacustomer (name) VALUES ('mike');
+GO
+
+-- Select from both tables to check data
+USE usadb;
+GO
+SELECT * FROM dbo.usacustomer;
+
+USE indiadb;
+GO
+SELECT * FROM dbo.indiacustomer;
+
+USE usadb;
+GO
+
+CREATE TABLE usacustomer1
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name VARCHAR(50)
+);
+GO
+
+INSERT INTO usacustomer1 (id, name) VALUES (DEFAULT, 'tom');
+INSERT INTO usacustomer1 (id, name) VALUES (DEFAULT, 'mike');
+GO
+
+-- To check inserted data
+SELECT * FROM usacustomer1;
+SELECT * FROM indiacustomer1;
+
+CREATE TABLE indiacustomer1
+(
+    id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    name VARCHAR(50)
+);
+GO
+
+INSERT INTO indiacustomer1 (id, name) VALUES (DEFAULT, 'tom');
+INSERT INTO indiacustomer1 (id, name) VALUES (DEFAULT, 'mike');
+GO
+
+--PART 137 check guid null or empty
+DECLARE @MyGuid UNIQUEIDENTIFIER;
+SET @MyGuid = NEWID();
+
+IF (@MyGuid IS NULL)
+BEGIN
+    PRINT 'Guid is NULL';
+END
+ELSE
+BEGIN
+    PRINT 'Guid is NOT NULL';
+END
+
+select @MyGuid
+
+--PART 138 dynamic sql
 
 
 
 
+--PART 139 implement search web page using ASP NET
 
 
 
+--PART 140 implement search webpage using asp net and dynamic sql
 
 
+--PART 141 prevent sql injection with dynamic
 
 
+--PART 142 dynamic sql  in stored procedures
 
 
+--PART 144 exec vs sp executesql in sql server
+DECLARE @FN NVARCHAR(50);
+SET @FN = 'John';
+
+DECLARE @sql NVARCHAR(MAX);
+SET @sql = 'SELECT * FROM Employees WHERE Name = ''' + @FN + '''';
+
+-- Execute the dynamic SQL
+EXEC (@sql);
+
+SELECT * FROM EMPLOYEES
+-------------------------------------------------------
+DECLARE @FN NVARCHAR(50);
+SET @FN = 'John';
+
+DECLARE @sql NVARCHAR(MAX);
+SET @sql = 'SELECT * FROM Employees WHERE Name = @Name';
+
+-- Execute the dynamic SQL with parameter
+EXEC sp_executesql @sql, N'@Name NVARCHAR(50)', @Name = @FN;
+
+--PART 145 sql server query plan cache
 
 
+--PART 146 quote name function in sql server
+CREATE TABLE [USA1Customers] (
+    ID INT PRIMARY KEY IDENTITY(1,1),
+    FirstName NVARCHAR(50),
+    LastName NVARCHAR(50),
+    Gender VARCHAR(50)
+);
+
+INSERT INTO [USA1Customers] (FirstName, LastName, Gender) VALUES 
+('Mark', 'Hastings', 'Male'),
+('Steve', 'Pound', 'Male'),
+('Ben', 'Hoskins', 'Male'),
+('Philip', 'Hastings', 'Male'),
+('Mary', 'Lambeth', 'Female'),
+('Valarie', 'Vikings', 'Female'),
+('John', 'Stanmore', 'Male');
+SELECT * FROM USA1Customers
+
+SELECT * FROM [USA1 Customers]--IF THERE IS SPACE ADD BRACKETS
 
 
+DECLARE @sql NVARCHAR(MAX);
+DECLARE @tableName NVARCHAR(50);
+
+-- If your table name has spaces, include brackets here:
+SET @tableName = '[USA1Customers]';
+
+-- Build the dynamic SQL string:
+SET @sql = 'SELECT * FROM ' + @tableName;
+
+-- Execute the dynamic SQL:
+EXEC sp_executesql @sql;
 
 
+DECLARE @sql NVARCHAR(MAX);
+DECLARE @tableName NVARCHAR(50);
+
+-- Set table name without brackets if you plan to use QUOTENAME
+SET @tableName = 'USA1Customers';
+
+-- Build the dynamic SQL string with schema and table separated by a dot
+SET @sql = 'SELECT * FROM ' + QUOTENAME('dbo') + '.' + QUOTENAME(@tableName);
+
+PRINT @sql;
+
+-- Execute the dynamic SQL:
+EXEC sp_executesql @sql;
+
+select QUOTENAME('usa customers','''')
+
+Declare @tableName nvarchar (50)
+Set @tableName = 'USA ] Customers'
+Set @tableName = QUOTENAME (@tableName)
+Print @tableName
+Set @tableName = PARSENAME (@tableName, 1)
+Print @tableName
+
+--PART 147 dynamic sql vs stored procedures
 
 
+--PART 148 DYNAMIC SQL OUTPUT PARAMETER
+select * from USA1Customers
+
+CREATE PROCEDURE spemployeecount
+    @gender NVARCHAR(10),
+    @count INT OUTPUT
+AS
+BEGIN
+    DECLARE @sql NVARCHAR(MAX);
+
+    -- Build dynamic SQL
+    SET @sql = 'SELECT @count = COUNT(*) FROM Employees WHERE Gender = @gender';
+
+    -- Execute with proper parameter declaration
+    EXEC sp_executesql 
+        @sql, 
+        N'@gender NVARCHAR(10), @count INT OUTPUT', 
+        @gender = @gender, 
+        @count = @count OUTPUT;
+END
+
+DECLARE @result INT;
+EXEC spemployeecount @gender = 'Male', @count = @result OUTPUT;
+SELECT @result AS TotalCount;
+
+--PART 149 temp tables in dynamic sql
+CREATE PROCEDURE spTempTableInDynamicSQL
+AS
+BEGIN
+    DECLARE @sql NVARCHAR(MAX);
+
+    SET @sql = '
+    CREATE TABLE #Test (Id INT);
+    INSERT INTO #Test VALUES (101);
+    SELECT * FROM #Test;
+    ';
+
+    EXEC sp_executesql @sql;
+END;
+
+execute spTempTableInDynamicSQL
 
 
+ALTER PROCEDURE spTempTableInDynamicSQL
+AS
+BEGIN
+        CREATE TABLE #Test (Id INT);
+        INSERT INTO #Test VALUES (101);
+        declare @sql nvarchar(max)
+		set @sql='select * from #test'
+    EXEC sp_executesql @sql;
+END;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+execute spTempTableInDynamicSQL
 
